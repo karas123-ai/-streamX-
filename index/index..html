@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>streamX</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #121212;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    header {
+      background: linear-gradient(90deg, #ff0000, #cc0000);
+      padding: 20px;
+      text-align: center;
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      user-select: none;
+    }
+    main {
+      flex: 1;
+      padding: 20px;
+      max-width: 1000px;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .search-box {
+      width: 100%;
+      max-width: 700px;
+      display: flex;
+      gap: 10px;
+    }
+    input[type="text"] {
+      flex-grow: 1;
+      padding: 15px 20px;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 10px;
+      outline: none;
+      box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+      background-color: #222;
+      color: white;
+      transition: box-shadow 0.3s ease;
+    }
+    input[type="text"]:focus {
+      box-shadow: 0 0 15px #ff0000;
+    }
+    button {
+      padding: 15px 30px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: white;
+      background: linear-gradient(90deg, #ff0000, #cc0000);
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 5px 10px rgba(204, 0, 0, 0.6);
+      transition: background 0.3s ease;
+      user-select: none;
+    }
+    button:hover {
+      background: linear-gradient(90deg, #cc0000, #990000);
+    }
+    .videos {
+      margin-top: 30px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 20px;
+    }
+    .video {
+      background-color: #222;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 0 10px rgba(255, 0, 0, 0.6);
+      transition: transform 0.3s ease;
+    }
+    .video:hover {
+      transform: scale(1.03);
+      box-shadow: 0 0 15px #ff0000;
+    }
+    .video iframe {
+      width: 100%;
+      height: 200px;
+      border: none;
+    }
+    .video h3 {
+      padding: 10px 15px;
+      font-size: 1rem;
+      margin: 0;
+      color: #ff4c4c;
+      user-select: text;
+    }
+    #loadMoreBtn {
+      margin-top: 20px;
+      padding: 12px 40px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: white;
+      background: linear-gradient(90deg, #ff0000, #cc0000);
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 5px 10px rgba(204, 0, 0, 0.6);
+      transition: background 0.3s ease;
+      user-select: none;
+      display: none;
+    }
+    #loadMoreBtn:hover {
+      background: linear-gradient(90deg, #cc0000, #990000);
+    }
+    footer {
+      text-align: center;
+      padding: 10px;
+      background-color: #111;
+      font-size: 0.9rem;
+      user-select: none;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <header>streamX</header>
+  <main>
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="ابحث في streamX" />
+      <button id="searchBtn">ابحث</button>
+    </div>
+    <div class="videos" id="videosContainer"></div>
+    <button id="loadMoreBtn">تحميل المزيد</button>
+  </main>
+  <footer>© 2025 streamX</footer>
+
+  <script>
+    const apiKey = 'AIzaSyDWRn4ukM0NSU1Nj2-Z400-KzXoq-Owj44';
+    const videosContainer = document.getElementById('videosContainer');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+
+    let nextPageToken = null;
+    let currentQuery = '';
+
+    async function fetchVideos(query, pageToken = '') {
+      const maxResults = 12;
+      let apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=${maxResults}&type=video&q=${encodeURIComponent(query)}&key=${apiKey}`;
+      if (pageToken) apiUrl += `&pageToken=${pageToken}`;
+
+      try {
+        const response = await fetch(apiUrl);
+        const data = await response.json();
+
+        if (data.error) {
+          videosContainer.innerHTML = `<p>حدث خطأ: ${data.error.message}</p>`;
+          loadMoreBtn.style.display = 'none';
+          return;
+        }
+
+        if (!data.items || data.items.length === 0) {
+          if (!pageToken) {
+            videosContainer.innerHTML = `<p>لا توجد نتائج بحث.</p>`;
+          }
+          loadMoreBtn.style.display = 'none';
+          return;
+        }
+
+        data.items.forEach(item => {
+          const videoId = item.id.videoId;
+          const title = item.snippet.title;
+
+          const videoDiv = document.createElement('div');
+          videoDiv.className = 'video';
+
+          videoDiv.innerHTML = `
+            <iframe src="https://www.youtube.com/embed/${videoId}?modestbranding=1&rel=0&controls=1&vq=hd1080" allowfullscreen></iframe>
+            <h3>${title}</h3>
+          `;
+
+          videosContainer.appendChild(videoDiv);
+        });
+
+        nextPageToken = data.nextPageToken;
+        loadMoreBtn.style.display = nextPageToken ? 'inline-block' : 'none';
+      } catch (error) {
+        videosContainer.innerHTML = `<p>حدث خطأ في الاتصال بالخادم.</p>`;
+        loadMoreBtn.style.display = 'none';
+        console.error(error);
+      }
+    }
+
+    function clearResults() {
+      videosContainer.innerHTML = '';
+      nextPageToken = null;
+      loadMoreBtn.style.display = 'none';
+    }
+
+    searchBtn.addEventListener('click', () => {
+      const query = searchInput.value.trim();
+      if (!query) {
+        alert('من فضلك اكتب كلمة للبحث');
+        return;
+      }
+      clearResults();
+      currentQuery = query;
+      fetchVideos(currentQuery);
+    });
+
+    loadMoreBtn.addEventListener('click', () => {
+      if (nextPageToken) {
+        fetchVideos(currentQuery, nextPageToken);
+      }
+    });
+
+    searchInput.addEventListener('keyup', (e) => {
+      if (e.key === 'Enter') {
+        searchBtn.click();
+      }
+    });
+  </script>
+</body>
+</html>
